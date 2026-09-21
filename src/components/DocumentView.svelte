@@ -1,5 +1,6 @@
 <script lang="ts">
   import { openUrl } from "@tauri-apps/plugin-opener";
+  import { highlightCodeBlocks } from "../lib/highlight";
   import { resolveLocalImages } from "../lib/images";
   import {
     CONTENT_WIDTH_VALUES,
@@ -40,7 +41,12 @@
       const href = anchor.getAttribute("href") ?? "";
       event.preventDefault();
 
-      if (/^https?:\/\//i.test(href)) {
+      if (href.startsWith("#")) {
+        document.getElementById(href.slice(1))?.scrollIntoView({ block: "start" });
+        return;
+      }
+
+      if (/^(https?|mailto|tel):/i.test(href)) {
         void openUrl(href);
       }
     }
@@ -67,6 +73,21 @@
     return () => {
       cancelled = true;
       release?.();
+    };
+  });
+
+  $effect(() => {
+    const element = container;
+    const body = html;
+
+    if (!element || !body) return;
+
+    let cancelled = false;
+
+    void highlightCodeBlocks(element, () => cancelled);
+
+    return () => {
+      cancelled = true;
     };
   });
 </script>
@@ -186,6 +207,46 @@
     padding: 0;
     border-radius: 0;
     font-size: 0.8125em;
+  }
+
+  .document :global(.shiki span) {
+    color: var(--shiki-light);
+  }
+
+  :global([data-theme="dark"]) .document :global(.shiki span) {
+    color: var(--shiki-dark);
+  }
+
+  .document :global(ul.contains-task-list) {
+    padding-left: 0.2em;
+  }
+
+  .document :global(.task-list-item) {
+    list-style: none;
+  }
+
+  .document :global(.task-checkbox) {
+    margin: 0 0.35em 0 0;
+    vertical-align: middle;
+  }
+
+  .document :global(.footnotes) {
+    margin-top: 3em;
+    font-size: 0.9em;
+    color: var(--text-muted);
+  }
+
+  .document :global(.footnotes-sep) {
+    margin-bottom: 1.5em;
+  }
+
+  .document :global(.footnotes-list) {
+    padding-left: 1.25em;
+  }
+
+  .document :global(.footnote-ref a),
+  .document :global(.footnote-backref) {
+    text-decoration: none;
   }
 
   .document :global(hr) {

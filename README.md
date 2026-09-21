@@ -6,7 +6,7 @@ No account, no server, no cloud, no telemetry.
 
 ## Status
 
-**v0.3 — folder navigation.** Read a single document, or browse a project.
+**v0.4 — advanced Markdown.** Modern documentation renders the way its authors meant it.
 
 Implemented:
 
@@ -16,15 +16,28 @@ Implemented:
 - Sidebar file tree of Markdown documents, with nested folders, the current
   document highlighted, and the path to it expanded automatically
 - The tree refreshes when the window regains focus, or from the refresh button
-- Render headings, paragraphs, emphasis, strong, links, images, blockquotes,
-  ordered/unordered lists, code blocks, inline code, horizontal rules and tables
-- System, light and dark theme
-- Configurable content width and text size (from the toolbar)
+- GitHub flavoured Markdown: tables, task lists, strikethrough, autolinks
+- Footnotes, automatic heading anchors, and working in-page links
+- Syntax highlighting through Shiki, loaded only when a document needs it
+- System, light and dark theme; configurable content width and text size
 - Local images referenced by relative paths, plus remote images
 - Open links in the default browser
 
-Not implemented yet: editing, search, syntax highlighting, footnotes, file
-associations, recent files.
+Not implemented yet: editing, search, file associations, recent files. Mermaid
+and KaTeX are deliberately out of scope: both would add a large rendering
+engine for a small gain.
+
+### Syntax highlighting
+
+Fenced code blocks are highlighted with Shiki using the GitHub light and dark
+themes, so highlighting follows the application theme without re-rendering.
+
+Shiki, its themes and every grammar are loaded lazily and per language, so
+documents without code blocks never pay for the highlighter. Recognised
+languages include bash, C, C++, C#, CSS, diff, Docker, Go, HTML, Java,
+JavaScript, JSON, JSX, Kotlin, Markdown, PHP, Python, Ruby, Rust, SQL, Swift,
+TOML, TSX, TypeScript, XML and YAML, plus common aliases. Unknown languages
+fall back to a plain code block.
 
 ### What folder browsing skips
 
@@ -32,6 +45,17 @@ Only `.md` and `.markdown` files are listed. Hidden files and folders (starting
 with `.`), plus `node_modules`, `target`, `dist`, `build`, `out`, `venv` and
 `__pycache__`, are ignored, and symlinked folders are not followed. A folder
 with more than 5,000 documents is truncated with a notice.
+
+### Security
+
+Markdown is treated as untrusted input:
+
+- Raw HTML is escaped rather than rendered
+- `javascript:`, `vbscript:`, `file:` and `data:text/html` destinations are
+  rejected for links and images, including obfuscated spellings
+- Event handler and `style` attributes are dropped from every token
+- A sanitising pass runs after all other rendering rules, so plugin output is
+  covered too, and it neutralises raw HTML even if HTML rendering were enabled
 
 ## Keyboard shortcuts
 
@@ -80,17 +104,18 @@ npm run tauri build -- --bundles app
 
 ```sh
 npm run check   # Svelte + TypeScript
-npm test        # Markdown rendering smoke test
+npm test        # Markdown, settings and folder logic tests
 cd src-tauri && cargo test && cargo clippy --all-targets -- -D warnings
 ```
 
 ## Architecture
 
 ```text
-Svelte UI  ──Tauri IPC──  Rust (thin: file reading, native dialogs, opener)
+Svelte UI  ──Tauri IPC──  Rust (thin: file reading, folder scanning, native dialogs, opener)
 ```
 
-- `src/lib/markdown.ts` — markdown-it configuration and rendering
+- `src/lib/markdown.ts` — markdown-it configuration, anchors, task lists, sanitising
+- `src/lib/highlight.ts` — lazy Shiki syntax highlighting
 - `src/lib/filesystem.ts` — Tauri IPC calls for reading files and folders
 - `src/lib/tree.ts` — builds and flattens the sidebar file tree
 - `src/lib/images.ts` — loads images that live next to the document
@@ -100,9 +125,6 @@ Svelte UI  ──Tauri IPC──  Rust (thin: file reading, native dialogs, open
 - `src/components/DocumentView.svelte` — rendered document and link handling
 - `src-tauri/src/commands/file.rs` — reading documents and images from disk
 - `src-tauri/src/commands/folder.rs` — scanning folders for Markdown documents
-
-Markdown is treated as untrusted input: raw HTML in Markdown is escaped, not
-rendered, and `javascript:` links are rejected by markdown-it.
 
 ## License
 
