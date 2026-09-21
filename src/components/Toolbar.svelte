@@ -13,14 +13,20 @@
     filePath = null,
     fileName = null,
     settings = $bindable(),
+    sidebarAvailable = false,
+    sidebarVisible = false,
     onOpen,
     onOpenFolder,
+    onToggleSidebar,
   }: {
     filePath?: string | null;
     fileName?: string | null;
     settings: AppSettings;
+    sidebarAvailable?: boolean;
+    sidebarVisible?: boolean;
     onOpen: () => void;
     onOpenFolder: () => void;
+    onToggleSidebar: () => void;
   } = $props();
 
   const THEME_LABELS: Record<ThemePreference, string> = {
@@ -71,6 +77,17 @@
   {/if}
 
   <div class="actions">
+    {#if sidebarAvailable}
+      <button
+        class="button icon"
+        aria-pressed={sidebarVisible}
+        title={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
+        onclick={onToggleSidebar}
+      >
+        ☰
+      </button>
+    {/if}
+
     <button class="button" onclick={onOpen} title="Open a Markdown file">
       Open file
     </button>

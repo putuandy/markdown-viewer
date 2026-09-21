@@ -51,13 +51,11 @@
   }
 </script>
 
-<aside class="sidebar">
-  <div class="sidebar-header">
-    <span class="sidebar-title">Files</span>
+<div class="explorer">
+  <div class="explorer-header">
+    <span class="root" title={rootPath}>{rootName}</span>
     <button class="refresh" title="Refresh file list" onclick={onRefresh}>⟳</button>
   </div>
-
-  <p class="root" title={rootPath}>{rootName}</p>
 
   {#if rows.length === 0}
     <p class="message">No Markdown files in this folder.</p>
@@ -88,36 +86,34 @@
   {#if truncated}
     <p class="message">Only the first 5,000 files are listed.</p>
   {/if}
-</aside>
+</div>
 
 <style>
-  .sidebar {
+  .explorer {
     display: flex;
+    flex: 1;
     flex-direction: column;
-    flex: none;
-    width: 15.5rem;
-    overflow-y: auto;
-    border-right: 1px solid var(--border);
-    background: var(--bg-toolbar);
-    font-size: 0.8125rem;
+    min-height: 0;
   }
 
-  .sidebar-header {
+  .explorer-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0.6rem 0.75rem 0;
+    gap: 0.4rem;
+    padding: 0.5rem 0.5rem 0.4rem 0.75rem;
   }
 
-  .sidebar-title {
-    font-size: 0.6875rem;
+  .root {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-faint);
+    color: var(--text);
   }
 
   .refresh {
+    flex: none;
     padding: 0.1rem 0.4rem;
     border: none;
     border-radius: 5px;
@@ -133,20 +129,11 @@
     color: var(--text);
   }
 
-  .root {
-    margin: 0.15rem 0 0.5rem;
-    padding: 0 0.75rem;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    font-weight: 600;
-    color: var(--text);
-  }
-
   .tree {
     flex: 1;
     margin: 0;
     padding: 0 0.4rem 1rem;
+    overflow-y: auto;
     list-style: none;
   }
 

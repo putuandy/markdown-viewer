@@ -29,6 +29,7 @@ test("keeps valid stored settings", () => {
       theme: "dark",
       contentWidth: "wide",
       fontSize: "large",
+      sidebar: false,
     }),
   });
 
@@ -36,13 +37,19 @@ test("keeps valid stored settings", () => {
     theme: "dark",
     contentWidth: "wide",
     fontSize: "large",
+    sidebar: false,
   });
 });
 
 test("drops invalid or missing values", () => {
   assert.deepEqual(
-    normalizeSettings({ theme: "neon", contentWidth: 42, fontSize: "xlarge" }),
-    { theme: "system", contentWidth: "medium", fontSize: "xlarge" },
+    normalizeSettings({
+      theme: "neon",
+      contentWidth: 42,
+      fontSize: "xlarge",
+      sidebar: "yes",
+    }),
+    { theme: "system", contentWidth: "medium", fontSize: "xlarge", sidebar: true },
   );
 
   assert.deepEqual(normalizeSettings(null), DEFAULT_SETTINGS);
@@ -57,7 +64,12 @@ test("survives corrupt stored data", () => {
 
 test("round-trips settings through storage", () => {
   const storage = fakeStorage();
-  const settings = { theme: "light", contentWidth: "narrow", fontSize: "small" };
+  const settings = {
+    theme: "light",
+    contentWidth: "narrow",
+    fontSize: "small",
+    sidebar: false,
+  };
 
   saveSettings(storage, settings);
 

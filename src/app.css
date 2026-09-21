@@ -22,6 +22,7 @@
 
   --shadow-popover: 0 8px 24px rgba(31, 35, 40, 0.16);
   --bg-stripe: rgba(31, 35, 40, 0.035);
+  --highlight-bg: rgba(255, 196, 0, 0.45);
 
   --font-content: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     Helvetica, Arial, sans-serif;
@@ -56,6 +57,7 @@
 
   --shadow-popover: 0 8px 24px rgba(1, 4, 9, 0.6);
   --bg-stripe: rgba(255, 255, 255, 0.035);
+  --highlight-bg: rgba(210, 153, 34, 0.4);
 }
 
 * {
@@ -84,5 +86,14 @@ body {
 
 ::selection {
   background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+::highlight(markdown-viewer-match) {
+  background-color: var(--highlight-bg);
+}
+
+::highlight(markdown-viewer-current) {
+  background-color: var(--accent);
   color: var(--accent-contrast);
 }

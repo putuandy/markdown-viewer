@@ -6,6 +6,7 @@ export type AppSettings = {
   theme: ThemePreference;
   contentWidth: ContentWidth;
   fontSize: FontSize;
+  sidebar: boolean;
 };
 
 export const THEME_PREFERENCES: ThemePreference[] = ["system", "light", "dark"];
@@ -30,12 +31,17 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: "system",
   contentWidth: "medium",
   fontSize: "medium",
+  sidebar: true,
 };
 
 const STORAGE_KEY = "markdown-viewer.settings";
 
 type ReadableStorage = Pick<Storage, "getItem">;
 type WritableStorage = Pick<Storage, "setItem">;
+
+function pickBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
 
 function pickOption<T extends string>(
   value: unknown,
@@ -66,6 +72,10 @@ export function normalizeSettings(raw: unknown): AppSettings {
       (source as Record<string, unknown>).fontSize,
       FONT_SIZES,
       DEFAULT_SETTINGS.fontSize,
+    ),
+    sidebar: pickBoolean(
+      (source as Record<string, unknown>).sidebar,
+      DEFAULT_SETTINGS.sidebar,
     ),
   };
 }

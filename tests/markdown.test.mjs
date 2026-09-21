@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   createMarkdownIt,
   isSafeUrl,
+  renderDocument,
   renderMarkdown,
   slugify,
 } from "../src/lib/markdown.ts";
@@ -107,6 +108,28 @@ text
 
   assert.match(html, /<h2 id="installation">/);
   assert.match(html, /<h3 id="installation-1">/);
+});
+
+test("reports the document outline", () => {
+  const { html, outline } = renderDocument(`# Title
+
+## Install **now**
+
+### Deep
+
+#### Also
+
+## Title
+`);
+
+  assert.deepEqual(outline, [
+    { id: "title", level: 1, text: "Title" },
+    { id: "install-now", level: 2, text: "Install now" },
+    { id: "deep", level: 3, text: "Deep" },
+    { id: "also", level: 4, text: "Also" },
+    { id: "title-1", level: 2, text: "Title" },
+  ]);
+  assert.match(html, /<h2 id="install-now">Install <strong>now<\/strong><\/h2>/);
 });
 
 test("slugifies heading text", () => {

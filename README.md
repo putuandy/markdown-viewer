@@ -6,7 +6,7 @@ No account, no server, no cloud, no telemetry.
 
 ## Status
 
-**v0.4 — advanced Markdown.** Modern documentation renders the way its authors meant it.
+**v0.5 — search and navigation.** Find your way around long documents.
 
 Implemented:
 
@@ -18,6 +18,11 @@ Implemented:
 - The tree refreshes when the window regains focus, or from the refresh button
 - GitHub flavoured Markdown: tables, task lists, strikethrough, autolinks
 - Footnotes, automatic heading anchors, and working in-page links
+- Find in document with `Cmd/Ctrl+F`: match count, next/previous, and matches
+  highlighted without touching the document
+- Sidebar with Files and Outline tabs; the outline highlights the section you
+  are reading and scrolls to any heading
+- Sidebar can be hidden from the toolbar
 - Syntax highlighting through Shiki, loaded only when a document needs it
 - System, light and dark theme; configurable content width and text size
 - Local images referenced by relative paths, plus remote images
@@ -63,12 +68,14 @@ Markdown is treated as untrusted input:
 | --- | --- |
 | `Cmd/Ctrl+O` | Open a Markdown file |
 | `Cmd/Ctrl+Shift+O` | Open a folder |
-| `Escape` | Close the toolbar menu |
+| `Cmd/Ctrl+F` | Find in the document |
+| `Enter` / `Shift+Enter` | Next / previous match |
+| `Escape` | Close the find bar or toolbar menu |
 
 ## Settings
 
-Theme, content width and text size are remembered locally in the application's
-webview storage. Nothing leaves the machine.
+Theme, content width, text size and sidebar visibility are remembered locally in
+the application's webview storage. Nothing leaves the machine.
 
 ## Requirements
 
@@ -116,12 +123,15 @@ Svelte UI  ──Tauri IPC──  Rust (thin: file reading, folder scanning, nat
 
 - `src/lib/markdown.ts` — markdown-it configuration, anchors, task lists, sanitising
 - `src/lib/highlight.ts` — lazy Shiki syntax highlighting
+- `src/lib/search.ts` — finding text in the rendered document
 - `src/lib/filesystem.ts` — Tauri IPC calls for reading files and folders
 - `src/lib/tree.ts` — builds and flattens the sidebar file tree
 - `src/lib/images.ts` — loads images that live next to the document
 - `src/lib/settings.ts` — theme, layout and text-size preferences
 - `src/components/Toolbar.svelte` — open, theme and reading options
 - `src/components/FileExplorer.svelte` — folder tree sidebar
+- `src/components/Outline.svelte` — heading outline with scroll tracking
+- `src/components/SearchBar.svelte` — find bar
 - `src/components/DocumentView.svelte` — rendered document and link handling
 - `src-tauri/src/commands/file.rs` — reading documents and images from disk
 - `src-tauri/src/commands/folder.rs` — scanning folders for Markdown documents

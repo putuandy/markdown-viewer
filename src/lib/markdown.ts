@@ -1,6 +1,22 @@
 import MarkdownIt from "markdown-it";
 import footnote from "markdown-it-footnote";
 import Token from "markdown-it/lib/token.mjs";
+import type StateCore from "markdown-it/lib/rules_core/state_core.mjs";
+
+export type OutlineEntry = {
+  id: string;
+  level: number;
+  text: string;
+};
+
+export type RenderResult = {
+  html: string;
+  outline: OutlineEntry[];
+};
+
+type RenderEnv = {
+  outline?: OutlineEntry[];
+};
 
 const URL_ATTRIBUTES = new Set([
   "href",
@@ -81,7 +97,9 @@ export function slugify(text: string): string {
   return slug || "section";
 }
 
-function applyHeadingAnchors(tokens: Token[]): void {
+function applyHeadingAnchors(state: StateCore): void {
+  const { tokens } = state;
+  const outline: OutlineEntry[] = [];
   const seen = new Map<string, number>();
 
   tokens.forEach((token, index) => {
@@ -94,8 +112,22 @@ function applyHeadingAnchors(tokens: Token[]): void {
     const count = seen.get(base) ?? 0;
     seen.set(base, count + 1);
 
-    token.attrSet("id", count === 0 ? base : `${base}-${count}`);
+    const id = count === 0 ? base : `${base}-${count}`;
+    token.attrSet("id", id);
+
+    const text =
+      state.md.renderer
+        .renderInlineAsText(inline.children ?? [], state.md.options, state.env)
+        .trim() || id;
+
+    outline.push({
+      id,
+      level: Number.parseInt(token.tag.slice(1), 10) || 1,
+      text,
+    });
   });
+
+  (state.env as RenderEnv).outline = outline;
 }
 
 function addClass(token: Token, className: string): void {
@@ -197,7 +229,7 @@ export function createMarkdownIt({ html = false }: { html?: boolean } = {}): Mar
   md.renderer.rules.table_close = () => "</table>\n</div>\n";
 
   md.core.ruler.push("task_lists", (state) => applyTaskLists(state.tokens));
-  md.core.ruler.push("heading_anchors", (state) => applyHeadingAnchors(state.tokens));
+  md.core.ruler.push("heading_anchors", (state) => applyHeadingAnchors(state));
   md.core.ruler.push("sanitize", (state) => sanitizeTokens(state.tokens));
 
   return md;
@@ -205,6 +237,14 @@ export function createMarkdownIt({ html = false }: { html?: boolean } = {}): Mar
 
 const md = createMarkdownIt();
 
+/** Renders a document and reports its headings in one pass. */
+export function renderDocument(source: string): RenderResult {
+  const env: RenderEnv = {};
+  const html = md.render(source, env);
+
+  return { html, outline: env.outline ?? [] };
+}
+
 export function renderMarkdown(source: string): string {
-  return md.render(source);
+  return renderDocument(source).html;
 }

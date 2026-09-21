@@ -4,6 +4,8 @@
   import { onMount } from "svelte";
   import DocumentView from "./components/DocumentView.svelte";
   import FileExplorer from "./components/FileExplorer.svelte";
+  import Outline from "./components/Outline.svelte";
+  import SearchBar from "./components/SearchBar.svelte";
   import Toolbar from "./components/Toolbar.svelte";
   import {
     basename,
@@ -13,7 +15,8 @@
     readMarkdownFile,
     relativePath,
   } from "./lib/filesystem";
-  import { renderMarkdown } from "./lib/markdown";
+  import { renderDocument } from "./lib/markdown";
+  import { clearHighlights } from "./lib/search";
   import { loadSettings, resolveTheme, saveSettings, type AppSettings } from "./lib/settings";
   import { buildFileTree, type FileNode } from "./lib/tree";
 
@@ -28,13 +31,24 @@
   let folderNodes = $state<FileNode[]>([]);
   let folderTruncated = $state(false);
 
-  const html = $derived(renderMarkdown(source));
+  let contentElement = $state<HTMLElement | undefined>(undefined);
+  let searchOpen = $state(false);
+  let sidebarTab = $state<"files" | "outline">("files");
+
+  const rendered = $derived(renderDocument(source));
+  const html = $derived(rendered.html);
+  const outline = $derived(rendered.outline);
   const fileName = $derived(filePath ? basename(filePath) : null);
   const folderName = $derived(folderPath ? basename(folderPath) : null);
   const currentPath = $derived(
     filePath && folderPath ? relativePath(folderPath, filePath) : null,
   );
   const theme = $derived(resolveTheme(settings.theme, systemPrefersDark));
+  const hasSidebar = $derived(folderPath !== null || outline.length > 0);
+  const sidebarVisible = $derived(settings.sidebar && hasSidebar);
+  const sidebarTabVisible = $derived(
+    folderPath && sidebarTab === "files" ? "files" : "outline",
+  );
   const shortcutLabel = navigator.platform.toLowerCase().includes("mac") ? "⌘" : "Ctrl+";
 
   $effect(() => {
@@ -72,6 +86,7 @@
       folderPath = path;
       folderNodes = buildFileTree(listing.files);
       folderTruncated = listing.truncated;
+      sidebarTab = "files";
     } catch (cause) {
       report(cause);
     }
@@ -120,6 +135,15 @@
     }
   }
 
+  function scrollToHeading(id: string) {
+    document.getElementById(id)?.scrollIntoView({ block: "start" });
+  }
+
+  function closeSearch() {
+    searchOpen = false;
+    clearHighlights();
+  }
+
   async function openDropped(paths: string[]) {
     for (const path of paths) {
       let kind = "other";
@@ -145,8 +169,23 @@
   }
 
   function handleKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape" && searchOpen) {
+      event.preventDefault();
+      closeSearch();
+      return;
+    }
+
     if (!event.metaKey && !event.ctrlKey) return;
-    if (event.key.toLowerCase() !== "o") return;
+
+    const key = event.key.toLowerCase();
+
+    if (key === "f") {
+      event.preventDefault();
+      searchOpen = true;
+      return;
+    }
+
+    if (key !== "o") return;
 
     event.preventDefault();
 
@@ -193,51 +232,87 @@
     {filePath}
     {fileName}
     bind:settings
+    sidebarAvailable={hasSidebar}
+    sidebarVisible={sidebarVisible}
     onOpen={chooseFile}
     onOpenFolder={chooseFolder}
+    onToggleSidebar={() => (settings.sidebar = !settings.sidebar)}
   />
 
   <div class="body">
-    {#if folderPath && folderName}
-      <FileExplorer
-        rootPath={folderPath}
-        rootName={folderName}
-        nodes={folderNodes}
-        {currentPath}
-        truncated={folderTruncated}
-        onSelect={openFromFolder}
-        onRefresh={refreshFolder}
-      />
+    {#if sidebarVisible}
+      <aside class="sidebar">
+        <div class="sidebar-tabs" role="tablist">
+          {#if folderPath}
+            <button
+              class="tab"
+              role="tab"
+              aria-selected={sidebarTabVisible === "files"}
+              onclick={() => (sidebarTab = "files")}
+            >
+              Files
+            </button>
+          {/if}
+          <button
+            class="tab"
+            role="tab"
+            aria-selected={sidebarTabVisible === "outline"}
+            onclick={() => (sidebarTab = "outline")}
+          >
+            Outline
+          </button>
+        </div>
+
+        {#if sidebarTabVisible === "files" && folderPath && folderName}
+          <FileExplorer
+            rootPath={folderPath}
+            rootName={folderName}
+            nodes={folderNodes}
+            {currentPath}
+            truncated={folderTruncated}
+            onSelect={openFromFolder}
+            onRefresh={refreshFolder}
+          />
+        {:else}
+          <Outline entries={outline} root={contentElement} onSelect={scrollToHeading} />
+        {/if}
+      </aside>
     {/if}
 
-    <main class="content">
-      {#if error}
-        <p class="notice error" role="alert">{error}</p>
+    <div class="viewer">
+      {#if searchOpen}
+        <SearchBar root={contentElement} revision={html} onClose={closeSearch} />
       {/if}
 
-      {#if filePath}
-        <DocumentView
-          {html}
-          documentPath={filePath}
-          contentWidth={settings.contentWidth}
-          fontSize={settings.fontSize}
-        />
-      {:else if loading}
-        <p class="notice">Opening…</p>
-      {:else if !error}
-        <div class="empty">
-          <h1>Markdown Viewer</h1>
-          <p>Open a Markdown file, or a folder of them, to start reading.</p>
-          <div class="actions">
-            <button class="primary" onclick={chooseFile}>Open Markdown file</button>
-            <button class="primary" onclick={chooseFolder}>Open folder</button>
+      <main class="content" bind:this={contentElement}>
+        {#if error}
+          <p class="notice error" role="alert">{error}</p>
+        {/if}
+
+        {#if filePath}
+          <DocumentView
+            {html}
+            documentPath={filePath}
+            contentWidth={settings.contentWidth}
+            fontSize={settings.fontSize}
+          />
+        {:else if loading}
+          <p class="notice">Opening…</p>
+        {:else if !error}
+          <div class="empty">
+            <h1>Markdown Viewer</h1>
+            <p>Open a Markdown file, or a folder of them, to start reading.</p>
+            <div class="actions">
+              <button class="primary" onclick={chooseFile}>Open Markdown file</button>
+              <button class="primary" onclick={chooseFolder}>Open folder</button>
+            </div>
+            <p class="hint">
+              or press {shortcutLabel}O, {shortcutLabel}⇧O for a folder, or drop one here
+            </p>
           </div>
-          <p class="hint">
-            or press {shortcutLabel}O, {shortcutLabel}⇧O for a folder, or drop one here
-          </p>
-        </div>
-      {/if}
-    </main>
+        {/if}
+      </main>
+    </div>
   </div>
 </div>
 
@@ -255,9 +330,58 @@
     min-height: 0;
   }
 
-  .content {
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    flex: none;
+    width: 15.5rem;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+    background: var(--bg-toolbar);
+    font-size: 0.8125rem;
+  }
+
+  .sidebar-tabs {
+    display: flex;
+    flex: none;
+    gap: 0.25rem;
+    padding: 0.45rem 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab {
+    padding: 0.3rem 0.6rem 0.4rem;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .tab:hover {
+    color: var(--text);
+  }
+
+  .tab[aria-selected="true"] {
+    border-bottom-color: var(--accent);
+    color: var(--text);
+  }
+
+  .viewer {
+    position: relative;
+    display: flex;
     flex: 1;
     min-width: 0;
+    flex-direction: column;
+  }
+
+  .content {
+    flex: 1;
     overflow-y: auto;
     scroll-behavior: smooth;
   }
