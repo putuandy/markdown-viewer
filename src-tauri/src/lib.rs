@@ -1,6 +1,6 @@
 mod commands;
 
-use commands::{read_image_file, read_markdown_file};
+use commands::{list_markdown_files, path_kind, read_image_file, read_markdown_file};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -9,7 +9,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             read_markdown_file,
-            read_image_file
+            read_image_file,
+            list_markdown_files,
+            path_kind
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

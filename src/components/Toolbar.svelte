@@ -14,11 +14,13 @@
     fileName = null,
     settings = $bindable(),
     onOpen,
+    onOpenFolder,
   }: {
     filePath?: string | null;
     fileName?: string | null;
     settings: AppSettings;
     onOpen: () => void;
+    onOpenFolder: () => void;
   } = $props();
 
   const THEME_LABELS: Record<ThemePreference, string> = {
@@ -70,7 +72,11 @@
 
   <div class="actions">
     <button class="button" onclick={onOpen} title="Open a Markdown file">
-      Open
+      Open file
+    </button>
+
+    <button class="button" onclick={onOpenFolder} title="Open a folder of Markdown files">
+      Open folder
     </button>
 
     <label class="field">
