@@ -1,8 +1,20 @@
 mod file;
 mod folder;
+pub(crate) mod recent;
 
 pub use file::{read_image_file, read_markdown_file};
 pub use folder::{list_markdown_files, path_kind};
+pub use recent::{add_recent_file, clear_recent_files, recent_files};
+
+use tauri::State;
+
+use crate::PendingOpen;
+
+/// Hands the frontend a document that arrived before it was listening.
+#[tauri::command]
+pub fn take_pending_open(state: State<'_, PendingOpen>) -> Option<String> {
+    state.0.lock().ok().and_then(|mut pending| pending.take())
+}
 
 #[cfg(test)]
 mod ipc_tests {
@@ -38,7 +50,11 @@ mod ipc_tests {
                 super::file::read_markdown_file,
                 super::file::read_image_file,
                 super::folder::list_markdown_files,
-                super::folder::path_kind
+                super::folder::path_kind,
+                super::recent::recent_files,
+                super::recent::add_recent_file,
+                super::recent::clear_recent_files,
+                super::take_pending_open
             ])
             .build(mock_context(noop_assets()))
             .unwrap();

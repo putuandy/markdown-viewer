@@ -6,7 +6,7 @@ No account, no server, no cloud, no telemetry.
 
 ## Status
 
-**v0.5 — search and navigation.** Find your way around long documents.
+**v0.6 — native desktop integration.** It behaves like a desktop application, not a web page in a box.
 
 Implemented:
 
@@ -23,6 +23,15 @@ Implemented:
 - Sidebar with Files and Outline tabs; the outline highlights the section you
   are reading and scrolls to any heading
 - Sidebar can be hidden from the toolbar
+- File associations for `.md` and `.markdown`, so the app can be chosen as the
+  default viewer for Markdown documents
+- Opens documents handed to it by the system: double-click, "Open With", a
+  path on the command line, or the Dock
+- Recent documents: remembered between launches, listed on the empty screen and
+  in File → Open Recent
+- Native application menu with keyboard shortcuts
+- Window size and position are remembered
+- About panel from the Help menu
 - Syntax highlighting through Shiki, loaded only when a document needs it
 - System, light and dark theme; configurable content width and text size
 - Local images referenced by relative paths, plus remote images
@@ -75,7 +84,9 @@ Markdown is treated as untrusted input:
 ## Settings
 
 Theme, content width, text size and sidebar visibility are remembered locally in
-the application's webview storage. Nothing leaves the machine.
+the application's webview storage. Recent documents live in the platform
+configuration folder (`recent-files.json`); they are pruned as files disappear.
+Nothing leaves the machine.
 
 ## Requirements
 
@@ -135,6 +146,9 @@ Svelte UI  ──Tauri IPC──  Rust (thin: file reading, folder scanning, nat
 - `src/components/DocumentView.svelte` — rendered document and link handling
 - `src-tauri/src/commands/file.rs` — reading documents and images from disk
 - `src-tauri/src/commands/folder.rs` — scanning folders for Markdown documents
+- `src-tauri/src/commands/recent.rs` — recent documents IPC
+- `src-tauri/src/recent.rs` — recent document storage
+- `src-tauri/src/menu.rs` — native application menu
 
 ## License
 

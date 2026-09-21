@@ -49,3 +49,20 @@ export function listMarkdownFiles(root: string): Promise<FolderListing> {
 export function pathKind(path: string): Promise<"directory" | "markdown" | "other"> {
   return invoke<"directory" | "markdown" | "other">("path_kind", { path });
 }
+
+export function recentFiles(): Promise<string[]> {
+  return invoke<string[]>("recent_files");
+}
+
+export function addRecentFile(path: string): Promise<string[]> {
+  return invoke<string[]>("add_recent_file", { path });
+}
+
+export function clearRecentFiles(): Promise<string[]> {
+  return invoke<string[]>("clear_recent_files");
+}
+
+/** A document passed to the application from outside, if one is waiting. */
+export function takePendingOpen(): Promise<string | null> {
+  return invoke<string | null>("take_pending_open");
+}

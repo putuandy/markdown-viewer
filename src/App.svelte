@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { getVersion } from "@tauri-apps/api/app";
+  import { listen } from "@tauri-apps/api/event";
   import { getCurrentWebview } from "@tauri-apps/api/webview";
   import { open } from "@tauri-apps/plugin-dialog";
   import { onMount } from "svelte";
@@ -8,12 +10,16 @@
   import SearchBar from "./components/SearchBar.svelte";
   import Toolbar from "./components/Toolbar.svelte";
   import {
+    addRecentFile,
     basename,
+    clearRecentFiles,
     joinPath,
     listMarkdownFiles,
     pathKind,
     readMarkdownFile,
+    recentFiles,
     relativePath,
+    takePendingOpen,
   } from "./lib/filesystem";
   import { renderDocument } from "./lib/markdown";
   import { clearHighlights } from "./lib/search";
@@ -34,6 +40,10 @@
   let contentElement = $state<HTMLElement | undefined>(undefined);
   let searchOpen = $state(false);
   let sidebarTab = $state<"files" | "outline">("files");
+  let recent = $state<string[]>([]);
+  let version = $state("");
+  let aboutOpen = $state(false);
+  let opening = false;
 
   const rendered = $derived(renderDocument(source));
   const html = $derived(rendered.html);
@@ -71,10 +81,27 @@
       const contents = await readMarkdownFile(path);
       source = contents;
       filePath = path;
+      void remember(path);
     } catch (cause) {
       report(cause);
     } finally {
       loading = false;
+    }
+  }
+
+  async function remember(path: string) {
+    try {
+      recent = await addRecentFile(path);
+    } catch {
+      // Recent documents are a convenience; failing to record one is not an error.
+    }
+  }
+
+  async function clearRecent() {
+    try {
+      recent = await clearRecentFiles();
+    } catch {
+      // Ignore, the list simply stays as it is.
     }
   }
 
@@ -105,27 +132,41 @@
   }
 
   async function chooseFile() {
-    const selected = await open({
-      title: "Open Markdown file",
-      multiple: false,
-      directory: false,
-      filters: [{ name: "Markdown", extensions: ["md", "markdown"] }],
-    });
+    if (opening) return;
+    opening = true;
 
-    if (typeof selected === "string") {
-      await loadFile(selected);
+    try {
+      const selected = await open({
+        title: "Open Markdown file",
+        multiple: false,
+        directory: false,
+        filters: [{ name: "Markdown", extensions: ["md", "markdown"] }],
+      });
+
+      if (typeof selected === "string") {
+        await loadFile(selected);
+      }
+    } finally {
+      opening = false;
     }
   }
 
   async function chooseFolder() {
-    const selected = await open({
-      title: "Open folder",
-      multiple: false,
-      directory: true,
-    });
+    if (opening) return;
+    opening = true;
 
-    if (typeof selected === "string") {
-      await loadFolder(selected);
+    try {
+      const selected = await open({
+        title: "Open folder",
+        multiple: false,
+        directory: true,
+      });
+
+      if (typeof selected === "string") {
+        await loadFolder(selected);
+      }
+    } finally {
+      opening = false;
     }
   }
 
@@ -166,6 +207,22 @@
     }
 
     error = "Only Markdown files and folders can be opened.";
+  }
+
+  function handleMenuAction(action: unknown) {
+    if (typeof action === "string") {
+      if (action === "open-file") void chooseFile();
+      else if (action === "open-folder") void chooseFolder();
+      else if (action === "find") searchOpen = true;
+      else if (action === "clear-recent") void clearRecent();
+      else if (action === "about") aboutOpen = true;
+      return;
+    }
+
+    if (action && typeof action === "object" && "openPath" in action) {
+      const path = (action as { openPath?: unknown }).openPath;
+      if (typeof path === "string") void openDropped([path]);
+    }
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -211,16 +268,37 @@
     media.addEventListener("change", handleSchemeChange);
     window.addEventListener("focus", handleFocus);
 
-    const unlisten = getCurrentWebview().onDragDropEvent((event) => {
+    const unlistenDrop = getCurrentWebview().onDragDropEvent((event) => {
       if (event.payload.type === "drop") {
         void openDropped(event.payload.paths);
       }
     });
 
+    const unlistenMenu = listen("menu-action", (event) => handleMenuAction(event.payload));
+    const unlistenOpen = listen<string>("open-path", (event) => {
+      void openDropped([event.payload]);
+    });
+
+    void recentFiles()
+      .then((files) => (recent = files))
+      .catch(() => undefined);
+
+    void getVersion()
+      .then((value) => (version = value))
+      .catch(() => undefined);
+
+    void takePendingOpen()
+      .then((path) => {
+        if (path) void openDropped([path]);
+      })
+      .catch(() => undefined);
+
     return () => {
       media.removeEventListener("change", handleSchemeChange);
       window.removeEventListener("focus", handleFocus);
-      void unlisten.then((stop) => stop());
+      void unlistenDrop.then((stop) => stop());
+      void unlistenMenu.then((stop) => stop());
+      void unlistenOpen.then((stop) => stop());
     };
   });
 </script>
@@ -236,6 +314,7 @@
     sidebarVisible={sidebarVisible}
     onOpen={chooseFile}
     onOpenFolder={chooseFolder}
+    onFind={() => (searchOpen = !searchOpen)}
     onToggleSidebar={() => (settings.sidebar = !settings.sidebar)}
   />
 
@@ -309,11 +388,44 @@
             <p class="hint">
               or press {shortcutLabel}O, {shortcutLabel}⇧O for a folder, or drop one here
             </p>
+
+            {#if recent.length > 0}
+              <div class="recent">
+                <div class="recent-header">
+                  <span>Recent</span>
+                  <button class="link" onclick={clearRecent}>Clear</button>
+                </div>
+                <ul>
+                  {#each recent as path (path)}
+                    <li>
+                      <button class="recent-item" title={path} onclick={() => loadFile(path)}>
+                        {basename(path)}
+                      </button>
+                    </li>
+                  {/each}
+                </ul>
+              </div>
+            {/if}
           </div>
         {/if}
       </main>
     </div>
   </div>
+
+  {#if aboutOpen}
+    <div class="overlay" role="dialog" aria-modal="true" aria-label="About Markdown Viewer">
+      <div class="about">
+        <h2>Markdown Viewer</h2>
+        <p class="version">Version {version || "…"}</p>
+        <p>
+          A small, fast, local-first Markdown reader. Built with Tauri, Rust,
+          Svelte and markdown-it; syntax highlighting by Shiki.
+        </p>
+        <p>MIT licensed. No account, no server, no cloud, no telemetry.</p>
+        <button class="primary" onclick={() => (aboutOpen = false)}>Close</button>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -431,6 +543,105 @@
 
   .primary:hover {
     background: var(--bg-hover);
+  }
+
+  .recent {
+    width: 100%;
+    max-width: 22rem;
+    margin: 2rem 0 0;
+    text-align: left;
+  }
+
+  .recent-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0.25rem 0.35rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    text-transform: none;
+    letter-spacing: normal;
+    cursor: pointer;
+  }
+
+  .recent ul {
+    margin: 0.35rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .recent-item {
+    display: block;
+    width: 100%;
+    padding: 0.3rem 0.4rem;
+    overflow: hidden;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  .recent-item:hover {
+    background: var(--bg-hover);
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: rgba(1, 4, 9, 0.45);
+  }
+
+  .about {
+    max-width: 24rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-popover);
+    color: var(--text);
+    box-shadow: var(--shadow-popover);
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+
+  .about h2 {
+    margin: 0;
+    font-size: 1.125rem;
+  }
+
+  .about p {
+    margin: 0.6rem 0 0;
+    color: var(--text-muted);
+  }
+
+  .version {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .about .primary {
+    margin-top: 1.2rem;
+    font-size: 0.875rem;
   }
 
   .notice {

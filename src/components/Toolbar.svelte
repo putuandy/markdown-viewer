@@ -17,6 +17,7 @@
     sidebarVisible = false,
     onOpen,
     onOpenFolder,
+    onFind,
     onToggleSidebar,
   }: {
     filePath?: string | null;
@@ -26,6 +27,7 @@
     sidebarVisible?: boolean;
     onOpen: () => void;
     onOpenFolder: () => void;
+    onFind: () => void;
     onToggleSidebar: () => void;
   } = $props();
 
@@ -94,6 +96,10 @@
 
     <button class="button" onclick={onOpenFolder} title="Open a folder of Markdown files">
       Open folder
+    </button>
+
+    <button class="button" onclick={onFind} title="Find in the document">
+      Find
     </button>
 
     <label class="field">
