@@ -6,7 +6,7 @@ No account, no server, no cloud, no telemetry.
 
 ## Status
 
-**v0.1 — MVP.** Open and render a single Markdown file.
+**v0.2 — reading experience.** Open and read a Markdown file comfortably.
 
 Implemented:
 
@@ -15,11 +15,26 @@ Implemented:
 - Drop a `.md` file onto the window
 - Render headings, paragraphs, emphasis, strong, links, images, blockquotes,
   ordered/unordered lists, code blocks, inline code, horizontal rules and tables
+- System, light and dark theme
+- Configurable content width and text size (from the toolbar)
+- Local images referenced by relative paths, plus remote images
 - Open links in the default browser
 - Open another file at any time
 
-Not implemented yet: editing, themes, folder navigation, search, syntax
-highlighting, file associations, recent files.
+Not implemented yet: editing, folder navigation, search, syntax highlighting,
+footnotes, file associations, recent files.
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `Cmd/Ctrl+O` | Open a Markdown file |
+| `Escape` | Close the toolbar menu |
+
+## Settings
+
+Theme, content width and text size are remembered locally in the application's
+webview storage. Nothing leaves the machine.
 
 ## Requirements
 
@@ -67,8 +82,11 @@ Svelte UI  ──Tauri IPC──  Rust (thin: file reading, native dialogs, open
 
 - `src/lib/markdown.ts` — markdown-it configuration and rendering
 - `src/lib/filesystem.ts` — Tauri IPC calls for reading files
+- `src/lib/images.ts` — loads images that live next to the document
+- `src/lib/settings.ts` — theme, layout and text-size preferences
+- `src/components/Toolbar.svelte` — open, theme and reading options
 - `src/components/DocumentView.svelte` — rendered document and link handling
-- `src-tauri/src/lib.rs` — `read_markdown_file` command and application setup
+- `src-tauri/src/commands/file.rs` — reading documents and images from disk
 
 Markdown is treated as untrusted input: raw HTML in Markdown is escaped, not
 rendered, and `javascript:` links are rejected by markdown-it.

@@ -12,6 +12,9 @@ md.renderer.rules.link_open = (tokens, index, options, _env, self) => {
   return self.renderToken(tokens, index, options);
 };
 
+md.renderer.rules.table_open = () => '<div class="table-wrap">\n<table>\n';
+md.renderer.rules.table_close = () => "</table>\n</div>\n";
+
 export function renderMarkdown(source: string): string {
   return md.render(source);
 }
