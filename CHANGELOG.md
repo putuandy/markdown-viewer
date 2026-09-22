@@ -4,7 +4,26 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims
 at [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2026-09-22
+
+First stable release. No functional changes since 0.9.0: the feature set is
+frozen and documented.
+
+### The feature set
+
+- Open Markdown documents and folders, from the picker, the keyboard, a drop,
+  the command line or the file manager
+- GitHub flavoured Markdown, footnotes, heading anchors, task lists, tables
+- Syntax highlighting for 26 languages, loaded on demand, following the theme
+- System, light and dark theme; configurable content width and text size
+- Find in document, document outline, folder tree
+- Recent documents, file associations, native menu, remembered window geometry
+- Markdown treated as untrusted input throughout
+
+### Release artifacts
+
+Checksums are printed by the commands in the [README](README.md#build); binaries
+are not published from this repository yet.
 
 ## [0.9.0] - 2026-09-22
 

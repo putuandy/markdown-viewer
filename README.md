@@ -6,7 +6,8 @@ No account, no server, no cloud, no telemetry.
 
 ## Status
 
-**v0.8 — UX polish.** Quiet, keyboard-friendly and comfortable to read.
+**v1.0 — stable.** The feature set is complete and stable enough to rely on as
+a daily Markdown reader.
 
 Implemented:
 
@@ -42,9 +43,9 @@ Implemented:
 - Local images referenced by relative paths, plus remote images
 - Open links in the default browser
 
-Not implemented yet: editing, search, file associations, recent files. Mermaid
-and KaTeX are deliberately out of scope: both would add a large rendering
-engine for a small gain.
+Editing, note-taking, cloud sync and AI features are explicitly out of scope.
+Mermaid and KaTeX are not supported: both would add a large rendering engine for
+a small gain.
 
 ### Syntax highlighting
 
