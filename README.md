@@ -86,6 +86,11 @@ language on demand. Nothing is parsed, scanned or highlighted until it is needed
 - Search matches text inside a single text node, so a match spanning formatting
   (for example `**bold**plain`) is not found as one match.
 - Mermaid, KaTeX and other diagram engines are deliberately not supported.
+- Very large documents cost real memory: a synthetic 10 MB document rendered in
+  about 950 ms and used roughly 580 MB of JavaScript heap in Node. Typical
+  documentation is a few hundred kilobytes.
+- Windows and Linux are built from the same sources but have not been exercised
+  on those platforms yet.
 
 ### What folder browsing skips
 
@@ -141,6 +146,28 @@ Nothing leaves the machine.
 - [Rust](https://rustup.rs) stable
 - Platform toolchain for Tauri 2: Xcode Command Line Tools (macOS),
   WebView2 + MSVC (Windows), `webkit2gtk` + `libayatana-appindicator` (Linux)
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) — layers, IPC surface, security model
+- [Contributing](CONTRIBUTING.md)
+- [Changelog](CHANGELOG.md)
+
+## Install
+
+Prebuilt installers are not published yet, so build from source:
+
+```sh
+git clone <this repository>
+cd mdview
+npm install
+npm run tauri build
+```
+
+The application bundle and installers land in `src-tauri/target/release/bundle/`.
+On macOS, drag `Markdown Viewer.app` to `/Applications`. Once installed, `.md`
+and `.markdown` files can be associated with it from Finder's *Open With → Other
+→ Always Open With*.
 
 ## Development
 
