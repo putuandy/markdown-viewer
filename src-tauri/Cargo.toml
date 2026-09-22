@@ -2,7 +2,7 @@
 name = "markdown-viewer"
 version = "1.0.0"
 description = "A small, fast, local-first Markdown reader for the desktop."
-authors = ["Markdown Viewer contributors"]
+authors = ["putuandy"]
 edition = "2021"
 license = "MIT"
 

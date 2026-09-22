@@ -152,6 +152,7 @@ Nothing leaves the machine.
 
 - [Architecture](docs/ARCHITECTURE.md) — layers, IPC surface, security model
 - [Contributing](CONTRIBUTING.md)
+- [Third-party notices](THIRD-PARTY-NOTICES.md)
 - [Changelog](CHANGELOG.md)
 
 ## Install
@@ -159,8 +160,8 @@ Nothing leaves the machine.
 Prebuilt installers are not published yet, so build from source:
 
 ```sh
-git clone <this repository>
-cd mdview
+git clone https://github.com/putuandy/markdown-viewer.git
+cd markdown-viewer
 npm install
 npm run tauri build
 ```
@@ -229,4 +230,8 @@ Svelte UI  ──Tauri IPC──  Rust (thin: file reading, folder scanning, nat
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE). Copyright (c) 2026 putuandy.
+
+Release builds bundle third-party software; the licences and copyright notices
+are reproduced in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), which
+`npm run notices` regenerates.

@@ -60,6 +60,13 @@ perf: avoid re-parsing on theme change
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the layer diagram, the IPC
 surface and the security model.
 
+## License
+
+The project is MIT licensed (see [LICENSE](LICENSE)). By contributing you agree
+that your contributions are licensed under the same terms. Run
+`npm run notices` after changing dependencies so the third-party notices stay
+accurate.
+
 ## Reporting bugs
 
 Include:
