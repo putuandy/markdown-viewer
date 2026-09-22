@@ -62,6 +62,11 @@ export function clearRecentFiles(): Promise<string[]> {
   return invoke<string[]>("clear_recent_files");
 }
 
+/** Watches a folder so the file tree can follow changes on disk. */
+export function watchFolder(root: string): Promise<void> {
+  return invoke<void>("watch_folder", { root });
+}
+
 /** A document passed to the application from outside, if one is waiting. */
 export function takePendingOpen(): Promise<string | null> {
   return invoke<string | null>("take_pending_open");

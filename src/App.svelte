@@ -20,8 +20,9 @@
     recentFiles,
     relativePath,
     takePendingOpen,
+    watchFolder,
   } from "./lib/filesystem";
-  import { renderDocument } from "./lib/markdown";
+  import { renderDocument, type RenderResult } from "./lib/markdown";
   import { clearHighlights } from "./lib/search";
   import { loadSettings, resolveTheme, saveSettings, type AppSettings } from "./lib/settings";
   import { buildFileTree, type FileNode } from "./lib/tree";
@@ -44,8 +45,9 @@
   let version = $state("");
   let aboutOpen = $state(false);
   let opening = false;
+  let renderError = $state<string | null>(null);
+  let rendered = $state<RenderResult>({ html: "", outline: [] });
 
-  const rendered = $derived(renderDocument(source));
   const html = $derived(rendered.html);
   const outline = $derived(rendered.outline);
   const fileName = $derived(filePath ? basename(filePath) : null);
@@ -61,8 +63,39 @@
   );
   const shortcutLabel = navigator.platform.toLowerCase().includes("mac") ? "⌘" : "Ctrl+";
 
+  // Rendering waits for a frame, so a large document shows its loading state
+  // before the parser takes over the main thread.
   $effect(() => {
-    document.documentElement.dataset.theme = theme;
+    const text = source;
+
+    if (!text) {
+      rendered = { html: "", outline: [] };
+      return;
+    }
+
+    let cancelled = false;
+    const frame = requestAnimationFrame(() => {
+      if (cancelled) return;
+
+      try {
+        rendered = renderDocument(text);
+        renderError = null;
+      } catch (cause) {
+        renderError = `Could not render this document: ${
+          cause instanceof Error ? cause.message : String(cause)
+        }`;
+        rendered = { html: "", outline: [] };
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  });
+
+  $effect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
   });
 
   $effect(() => {
@@ -114,6 +147,8 @@
       folderNodes = buildFileTree(listing.files);
       folderTruncated = listing.truncated;
       sidebarTab = "files";
+
+      await watchFolder(path);
     } catch (cause) {
       report(cause);
     }
@@ -275,6 +310,9 @@
     });
 
     const unlistenMenu = listen("menu-action", (event) => handleMenuAction(event.payload));
+    const unlistenFolder = listen("folder-changed", () => {
+      void refreshFolder();
+    });
     const unlistenOpen = listen<string>("open-path", (event) => {
       void openDropped([event.payload]);
     });
@@ -298,6 +336,7 @@
       window.removeEventListener("focus", handleFocus);
       void unlistenDrop.then((stop) => stop());
       void unlistenMenu.then((stop) => stop());
+      void unlistenFolder.then((stop) => stop());
       void unlistenOpen.then((stop) => stop());
     };
   });
@@ -364,8 +403,8 @@
       {/if}
 
       <main class="content" bind:this={contentElement}>
-        {#if error}
-          <p class="notice error" role="alert">{error}</p>
+        {#if error || renderError}
+          <p class="notice error" role="alert">{error ?? renderError}</p>
         {/if}
 
         {#if filePath}
@@ -377,7 +416,7 @@
           />
         {:else if loading}
           <p class="notice">Opening…</p>
-        {:else if !error}
+        {:else if !error && !renderError}
           <div class="empty">
             <h1>Markdown Viewer</h1>
             <p>Open a Markdown file, or a folder of them, to start reading.</p>

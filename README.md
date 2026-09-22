@@ -6,7 +6,7 @@ No account, no server, no cloud, no telemetry.
 
 ## Status
 
-**v0.6 — native desktop integration.** It behaves like a desktop application, not a web page in a box.
+**v0.7 — performance and stability.** Measured, bounded and hard to knock over.
 
 Implemented:
 
@@ -32,6 +32,8 @@ Implemented:
 - Native application menu with keyboard shortcuts
 - Window size and position are remembered
 - About panel from the Help menu
+- Folder watching: the file tree follows documents appearing, changing and
+  disappearing on disk, debounced and filtered to Markdown files
 - Syntax highlighting through Shiki, loaded only when a document needs it
 - System, light and dark theme; configurable content width and text size
 - Local images referenced by relative paths, plus remote images
@@ -52,6 +54,35 @@ languages include bash, C, C++, C#, CSS, diff, Docker, Go, HTML, Java,
 JavaScript, JSON, JSX, Kotlin, Markdown, PHP, Python, Ruby, Rust, SQL, Swift,
 TOML, TSX, TypeScript, XML and YAML, plus common aliases. Unknown languages
 fall back to a plain code block.
+
+### Performance
+
+Measured on an Apple Silicon Mac with `npm run measure` and the release build.
+Treat these as observations, not guarantees.
+
+| | |
+| --- | --- |
+| Launch to a ready window | 0.8–1.1 s |
+| Idle memory, whole application | ~50 MB (34–38 MB process, ~12 MB WebKit helpers) |
+| 100 KB document, render | ~30 ms |
+| 1 MB document, render | ~105 ms |
+| 5 MB document, render | ~590 ms |
+| Sanitising a 1 MB document | ~3 ms |
+| First highlight of a code block (grammar load) | ~13 ms |
+| Folder scan, 2,000 documents | ~13 ms |
+| Frontend bundle (gzipped) | ~80 kB |
+| Application bundle | 4.5 MB |
+
+Documents are parsed once, off the first paint, and syntax highlighting loads per
+language on demand. Nothing is parsed, scanned or highlighted until it is needed.
+
+### Known limitations
+
+- Nesting deeper than 100 levels stops the parse: markdown-it drops whatever
+  follows rather than recursing without bound. Normal documents are unaffected.
+- Search matches text inside a single text node, so a match spanning formatting
+  (for example `**bold**plain`) is not found as one match.
+- Mermaid, KaTeX and other diagram engines are deliberately not supported.
 
 ### What folder browsing skips
 
@@ -122,7 +153,8 @@ npm run tauri build -- --bundles app
 
 ```sh
 npm run check   # Svelte + TypeScript
-npm test        # Markdown, settings and folder logic tests
+npm test        # Markdown, settings, folder, search and stress tests
+npm run measure # Render, highlight, search and sanitise timings
 cd src-tauri && cargo test && cargo clippy --all-targets -- -D warnings
 ```
 
@@ -149,6 +181,7 @@ Svelte UI  ──Tauri IPC──  Rust (thin: file reading, folder scanning, nat
 - `src-tauri/src/commands/recent.rs` — recent documents IPC
 - `src-tauri/src/recent.rs` — recent document storage
 - `src-tauri/src/menu.rs` — native application menu
+- `src-tauri/src/watcher.rs` — debounced folder watching
 
 ## License
 

@@ -29,13 +29,19 @@
     input?.select();
   });
 
+  // Debounced so that typing in a huge document does not re-walk the whole
+  // text on every keystroke.
   $effect(() => {
     const element = root;
     const text = query;
     void revision;
 
-    ranges = element ? findRanges(element, text) : [];
-    current = 0;
+    const timer = setTimeout(() => {
+      ranges = element ? findRanges(element, text) : [];
+      current = 0;
+    }, 120);
+
+    return () => clearTimeout(timer);
   });
 
   $effect(() => {

@@ -1,5 +1,5 @@
 mod file;
-mod folder;
+pub(crate) mod folder;
 pub(crate) mod recent;
 
 pub use file::{read_image_file, read_markdown_file};

@@ -1,6 +1,7 @@
 mod commands;
 mod menu;
 mod recent;
+mod watcher;
 
 use std::sync::Mutex;
 
@@ -10,6 +11,7 @@ use commands::{
 };
 use serde_json::json;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, Runtime};
+use watcher::{watch_folder, FolderWatcher};
 
 /// Emitted when a document is opened from outside the application.
 pub const OPEN_PATH_EVENT: &str = "open-path";
@@ -40,6 +42,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .manage(PendingOpen::default())
+        .manage(FolderWatcher::default())
         .invoke_handler(tauri::generate_handler![
             read_markdown_file,
             read_image_file,
@@ -48,7 +51,8 @@ pub fn run() {
             recent_files,
             add_recent_file,
             clear_recent_files,
-            take_pending_open
+            take_pending_open,
+            watch_folder
         ])
         .setup(|app| {
             let handle = app.handle();

@@ -1,4 +1,5 @@
 import MarkdownIt from "markdown-it";
+import type { Options } from "markdown-it";
 import footnote from "markdown-it-footnote";
 import Token from "markdown-it/lib/token.mjs";
 import type StateCore from "markdown-it/lib/rules_core/state_core.mjs";
@@ -205,7 +206,10 @@ function applyTaskLists(tokens: Token[]): void {
 }
 
 export function createMarkdownIt({ html = false }: { html?: boolean } = {}): MarkdownIt {
-  const md = new MarkdownIt({ html, linkify: true });
+  // Well above anything hand-written, while staying bounded: markdown-it stops
+  // parsing once this depth is exceeded, which matters for untrusted input.
+  // (@types/markdown-it does not list every runtime option.)
+  const md = new MarkdownIt({ html, linkify: true, maxNesting: 100 } as Options);
 
   md.use(footnote);
 

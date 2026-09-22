@@ -2,7 +2,7 @@ use std::fs;
 use std::path::Path;
 
 /// Folders that never hold documents worth browsing in a Markdown reader.
-const IGNORED_DIRECTORIES: [&str; 7] = [
+pub(crate) const IGNORED_DIRECTORIES: [&str; 7] = [
     "node_modules",
     "target",
     "dist",
@@ -57,7 +57,7 @@ pub fn path_kind(path: String) -> Result<String, String> {
 
     Ok(if metadata.is_dir() {
         "directory"
-    } else if has_markdown_extension(&path) {
+    } else if has_markdown_extension(Path::new(&path)) {
         "markdown"
     } else {
         "other"
@@ -102,7 +102,7 @@ fn collect_documents(root: &Path, folder: &Path, files: &mut Vec<String>, trunca
             }
 
             collect_documents(root, &path, files, truncated);
-        } else if file_type.is_file() && has_markdown_extension(name) {
+        } else if file_type.is_file() && has_markdown_extension(&path) {
             if let Ok(relative) = path.strip_prefix(root) {
                 files.push(relative.to_string_lossy().replace('\\', "/"));
             }
@@ -110,9 +110,12 @@ fn collect_documents(root: &Path, folder: &Path, files: &mut Vec<String>, trunca
     }
 }
 
-fn has_markdown_extension(name: &str) -> bool {
-    Path::new(name)
-        .extension()
+pub(crate) fn is_ignored_directory(name: &str) -> bool {
+    name.starts_with('.') || IGNORED_DIRECTORIES.contains(&name)
+}
+
+pub(crate) fn has_markdown_extension(path: &Path) -> bool {
+    path.extension()
         .and_then(|value| value.to_str())
         .is_some_and(|extension| {
             extension.eq_ignore_ascii_case("md") || extension.eq_ignore_ascii_case("markdown")
