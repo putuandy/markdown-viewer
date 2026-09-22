@@ -15,6 +15,7 @@
     settings = $bindable(),
     sidebarAvailable = false,
     sidebarVisible = false,
+    status = "",
     onOpen,
     onOpenFolder,
     onFind,
@@ -25,6 +26,7 @@
     settings: AppSettings;
     sidebarAvailable?: boolean;
     sidebarVisible?: boolean;
+    status?: string;
     onOpen: () => void;
     onOpenFolder: () => void;
     onFind: () => void;
@@ -78,10 +80,14 @@
     <span class="file-name" title={filePath ?? ""}>{fileName}</span>
   {/if}
 
+  {#if status}
+    <span class="status" role="status">{status}</span>
+  {/if}
+
   <div class="actions">
     {#if sidebarAvailable}
       <button
-        class="button icon"
+        class="button icon sidebar-toggle"
         aria-pressed={sidebarVisible}
         title={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
         onclick={onToggleSidebar}
@@ -113,7 +119,7 @@
 
     <div class="overflow" bind:this={overflowElement}>
       <button
-        class="button icon"
+        class="button icon sidebar-toggle"
         aria-haspopup="true"
         aria-expanded={overflowOpen}
         title="More options"
@@ -163,6 +169,14 @@
 
   .app-name {
     font-weight: 600;
+  }
+
+  .status {
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: var(--bg-hover);
+    color: var(--text-muted);
+    font-size: 0.75rem;
   }
 
   .file-name {
@@ -230,6 +244,12 @@
 
   .overflow {
     position: relative;
+  }
+
+  @media (max-width: 560px) {
+    .sidebar-toggle {
+      display: none;
+    }
   }
 
   .popover {

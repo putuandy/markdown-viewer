@@ -167,6 +167,27 @@ mod tests {
     }
 
     #[test]
+    #[cfg(unix)]
+    fn reports_unreadable_documents() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let path = temp_dir().join("sealed.md");
+        fs::write(&path, "# secret\n").unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o000)).unwrap();
+
+        let error = read_markdown_file(path.to_string_lossy().into_owned()).unwrap_err();
+
+        assert!(error.contains("Could not open"), "{error}");
+        assert!(
+            error.to_lowercase().contains("permission") || error.to_lowercase().contains("denied"),
+            "{error}"
+        );
+
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
+        fs::remove_file(&path).unwrap();
+    }
+
+    #[test]
     fn reports_missing_images() {
         let error = load_image_bytes(
             &temp_dir().join("readme.md").to_string_lossy(),

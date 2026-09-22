@@ -10,7 +10,7 @@
 
   --text: #1f2328;
   --text-muted: #57606a;
-  --text-faint: #8c959f;
+  --text-faint: #6e7781;
 
   --border: #e2e5e9;
   --border-strong: #d0d7de;
@@ -31,6 +31,11 @@
 
   --content-width: 42rem;
   --content-size: 1rem;
+
+  --radius-control: 6px;
+  --radius-surface: 10px;
+  --control-height: 1.75rem;
+  --transition: 120ms ease;
 }
 
 :root[data-theme="dark"] {
@@ -45,7 +50,7 @@
 
   --text: #e6edf3;
   --text-muted: #9198a1;
-  --text-faint: #6e7681;
+  --text-faint: #9198a1;
 
   --border: #30363d;
   --border-strong: #444c56;
@@ -96,4 +101,35 @@ body {
 ::highlight(markdown-viewer-current) {
   background-color: var(--accent);
   color: var(--accent-contrast);
+}
+
+button,
+select,
+input,
+[role="treeitem"] {
+  transition:
+    background-color var(--transition),
+    border-color var(--transition),
+    color var(--transition);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: var(--radius-control);
+}
+
+/* Chrome should not feel like selectable web text. */
+header,
+aside,
+.toolbar {
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

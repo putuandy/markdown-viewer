@@ -6,7 +6,7 @@ No account, no server, no cloud, no telemetry.
 
 ## Status
 
-**v0.7 — performance and stability.** Measured, bounded and hard to knock over.
+**v0.8 — UX polish.** Quiet, keyboard-friendly and comfortable to read.
 
 Implemented:
 
@@ -34,6 +34,9 @@ Implemented:
 - About panel from the Help menu
 - Folder watching: the file tree follows documents appearing, changing and
   disappearing on disk, debounced and filtered to Markdown files
+- The window title follows the document you are reading
+- Errors appear as a dismissible notice instead of a bare line of text
+- Reading progress: the sidebar tracks the section you are in
 - Syntax highlighting through Shiki, loaded only when a document needs it
 - System, light and dark theme; configurable content width and text size
 - Local images referenced by relative paths, plus remote images
@@ -102,6 +105,18 @@ Markdown is treated as untrusted input:
 - A sanitising pass runs after all other rendering rules, so plugin output is
   covered too, and it neutralises raw HTML even if HTML rendering were enabled
 
+## Accessibility
+
+- Full keyboard navigation: in the file tree, `↑`/`↓` move, `→` expands,
+  `←` collapses, `Home`/`End` jump; the outline uses the same pattern
+- Tree and outline expose the ARIA tree roles, levels and expansion state
+- Visible focus rings on every control, and `prefers-reduced-motion` disables
+  transitions and smooth scrolling
+- The reading area reports `aria-busy` while a document is loading or rendering,
+  and the find bar announces its match count
+- The browser context menu is suppressed, so the window does not expose
+  web-page affordances
+
 ## Keyboard shortcuts
 
 | Shortcut | Action |
@@ -109,6 +124,7 @@ Markdown is treated as untrusted input:
 | `Cmd/Ctrl+O` | Open a Markdown file |
 | `Cmd/Ctrl+Shift+O` | Open a folder |
 | `Cmd/Ctrl+F` | Find in the document |
+| `Cmd/Ctrl+B` | Show or hide the sidebar |
 | `Enter` / `Shift+Enter` | Next / previous match |
 | `Escape` | Close the find bar or toolbar menu |
 

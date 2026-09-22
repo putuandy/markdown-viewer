@@ -2,6 +2,7 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { listen } from "@tauri-apps/api/event";
   import { getCurrentWebview } from "@tauri-apps/api/webview";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
   import { open } from "@tauri-apps/plugin-dialog";
   import { onMount } from "svelte";
   import DocumentView from "./components/DocumentView.svelte";
@@ -47,6 +48,8 @@
   let opening = false;
   let renderError = $state<string | null>(null);
   let rendered = $state<RenderResult>({ html: "", outline: [] });
+  let rendering = $state(false);
+  let slowRender = $state(false);
 
   const html = $derived(rendered.html);
   const outline = $derived(rendered.outline);
@@ -74,6 +77,8 @@
     }
 
     let cancelled = false;
+    rendering = true;
+
     const frame = requestAnimationFrame(() => {
       if (cancelled) return;
 
@@ -85,13 +90,39 @@
           cause instanceof Error ? cause.message : String(cause)
         }`;
         rendered = { html: "", outline: [] };
+      } finally {
+        rendering = false;
       }
     });
 
     return () => {
       cancelled = true;
+      rendering = false;
       cancelAnimationFrame(frame);
     };
+  });
+
+  // Only mention rendering when it actually takes a moment.
+  $effect(() => {
+    if (!rendering) {
+      slowRender = false;
+      return;
+    }
+
+    const timer = setTimeout(() => (slowRender = true), 150);
+
+    return () => clearTimeout(timer);
+  });
+
+  const windowTitle = $derived(
+    fileName ? `${fileName} — Markdown Viewer` : "Markdown Viewer",
+  );
+
+  $effect(() => {
+    const title = windowTitle;
+    void getCurrentWindow()
+      .setTitle(title)
+      .catch(() => undefined);
   });
 
   $effect(() => {
@@ -249,6 +280,7 @@
       if (action === "open-file") void chooseFile();
       else if (action === "open-folder") void chooseFolder();
       else if (action === "find") searchOpen = true;
+      else if (action === "toggle-sidebar") settings.sidebar = !settings.sidebar;
       else if (action === "clear-recent") void clearRecent();
       else if (action === "about") aboutOpen = true;
       return;
@@ -258,6 +290,18 @@
       const path = (action as { openPath?: unknown }).openPath;
       if (typeof path === "string") void openDropped([path]);
     }
+  }
+
+  function handleContextMenu(event: MouseEvent) {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("input, textarea")) return;
+
+    event.preventDefault();
+  }
+
+  function dismissError() {
+    error = null;
+    renderError = null;
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -342,7 +386,7 @@
   });
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} oncontextmenu={handleContextMenu} />
 
 <div class="app">
   <Toolbar
@@ -351,6 +395,7 @@
     bind:settings
     sidebarAvailable={hasSidebar}
     sidebarVisible={sidebarVisible}
+    status={slowRender ? "Rendering…" : ""}
     onOpen={chooseFile}
     onOpenFolder={chooseFolder}
     onFind={() => (searchOpen = !searchOpen)}
@@ -402,9 +447,12 @@
         <SearchBar root={contentElement} revision={html} onClose={closeSearch} />
       {/if}
 
-      <main class="content" bind:this={contentElement}>
+      <main class="content" bind:this={contentElement} aria-busy={loading || rendering}>
         {#if error || renderError}
-          <p class="notice error" role="alert">{error ?? renderError}</p>
+          <div class="notice error" role="alert">
+            <span>{error ?? renderError}</span>
+            <button class="link" onclick={dismissError}>Dismiss</button>
+          </div>
         {/if}
 
         {#if filePath}
@@ -425,7 +473,8 @@
               <button class="primary" onclick={chooseFolder}>Open folder</button>
             </div>
             <p class="hint">
-              or press {shortcutLabel}O, {shortcutLabel}⇧O for a folder, or drop one here
+              or press <kbd>{shortcutLabel}O</kbd> to open a file,
+              <kbd>{shortcutLabel}⇧O</kbd> for a folder, or drop one here
             </p>
 
             {#if recent.length > 0}
@@ -691,6 +740,45 @@
   }
 
   .error {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    padding: 0.6rem 1rem;
+    border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+    border-radius: var(--radius-surface);
+    background: color-mix(in srgb, var(--danger) 8%, transparent);
     color: var(--danger);
+  }
+
+  .error .link {
+    margin-left: auto;
+    flex: none;
+  }
+
+  kbd {
+    padding: 0.1em 0.4em;
+    border: 1px solid var(--border-strong);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+
+  @media (max-width: 760px) {
+    .sidebar {
+      width: 12rem;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .sidebar {
+      display: none;
+    }
+
+    .empty {
+      padding: 1rem;
+    }
   }
 </style>

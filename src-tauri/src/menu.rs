@@ -7,7 +7,7 @@ use crate::commands::recent;
 /// Emitted to the frontend when a menu item is chosen.
 pub const MENU_EVENT: &str = "menu-action";
 
-const FILE_ITEMS: [&str; 2] = ["open-file", "open-folder"];
+const SIMPLE_ITEMS: [&str; 4] = ["open-file", "open-folder", "find", "toggle-sidebar"];
 
 /// Builds the application menu, including the current recent documents.
 fn build<R: Runtime>(
@@ -68,6 +68,11 @@ fn build<R: Runtime>(
                 .accelerator("CmdOrCtrl+F")
                 .build(app)?,
         )
+        .item(
+            &MenuItemBuilder::with_id("toggle-sidebar", "Toggle Sidebar")
+                .accelerator("CmdOrCtrl+B")
+                .build(app)?,
+        )
         .separator()
         .item(&PredefinedMenuItem::fullscreen(app, None)?)
         .build()?;
@@ -126,7 +131,7 @@ pub fn refresh<R: Runtime>(app: &AppHandle<R>) {
 }
 
 fn payload<R: Runtime>(app: &AppHandle<R>, id: &str) -> Option<Value> {
-    if FILE_ITEMS.contains(&id) || id == "find" || id == "clear-recent" {
+    if SIMPLE_ITEMS.contains(&id) || id == "clear-recent" {
         return Some(json!(id));
     }
 
