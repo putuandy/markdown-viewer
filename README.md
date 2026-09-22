@@ -157,7 +157,10 @@ Nothing leaves the machine.
 
 ## Install
 
-Prebuilt installers are not published yet, so build from source:
+Prebuilt macOS disk images and app bundles are attached to the
+[latest release](https://github.com/putuandy/markdown-viewer/releases/latest) —
+Apple silicon and Intel. Windows and Linux are not published yet, so build from
+source there:
 
 ```sh
 git clone https://github.com/putuandy/markdown-viewer.git
@@ -166,10 +169,13 @@ npm install
 npm run tauri build
 ```
 
-The application bundle and installers land in `src-tauri/target/release/bundle/`.
-On macOS, drag `Markdown Viewer.app` to `/Applications`. Once installed, `.md`
-and `.markdown` files can be associated with it from Finder's *Open With → Other
-→ Always Open With*.
+On macOS, open the disk image and drag **Markdown Viewer** onto the
+**Applications** shortcut, or drag the built `Markdown Viewer.app` from
+`src-tauri/target/release/bundle/macos/`. The bundles are ad-hoc signed rather
+than notarised, so the first launch needs right-click → **Open**.
+
+Once installed, `.md` and `.markdown` files can be associated with it from
+Finder's *Open With → Other → Always Open With*.
 
 ## Development
 

@@ -22,8 +22,11 @@ frozen and documented.
 
 ### Release artifacts
 
-Checksums are printed by the commands in the [README](README.md#build); binaries
-are not published from this repository yet.
+macOS disk images and app bundles for Apple silicon and Intel are attached to
+the [1.0.0 release](https://github.com/putuandy/markdown-viewer/releases/tag/v1.0.0),
+along with a `SHA256SUMS` file. Windows and Linux installers are not published
+yet; the release workflow that builds them needs `workflow` token scope before
+it can be pushed.
 
 ## [0.9.0] - 2026-09-22
 
